@@ -1,6 +1,10 @@
 const router = require("express").Router();
 const { User, validate } = require("../models/user");
 const bcrypt = require("bcrypt");
+const { route } = require("./auth");
+const Token = require("../models/token");
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto")
 
 router.post("/", async (req, res) => {
 	try {
@@ -17,11 +21,40 @@ router.post("/", async (req, res) => {
 		const salt = await bcrypt.genSalt(Number(process.env.SALT));
 		const hashPassword = await bcrypt.hash(req.body.password, salt);
 
-		await new User({ ...req.body, password: hashPassword }).save();
-		res.status(201).send({ message: "User created successfully" });
+		user = await new User({ ...req.body, password: hashPassword }).save();
+	
+		const token = await new Token({
+			userId:user._id,
+			token:crypto.randomBytes(32).toString("hex")
+
+		}).save();
+		const url = `${process.env.BASE_URL}users/${user._id}/verify/${token.token}`;
+		await sendEmail(user.email,"Verify email",url)
+		
+		
+		
+		res.status(201).send({ message: "send email" });
 	} catch (error) {
 		res.status(500).send({ message: "Internal Server Error" });
 	}
 });
+
+//get token
+router.get("/:id/verify/:token",async(req, res) =>{
+	try{
+		const user = await User.findOne({_id:req.params.id})
+		if(!user) return res.status(400).send({message:"invalind"});
+		const token = await Token.findOne({
+			userId:user_id,
+			token:req.params.token
+		})
+		if (!token) return res.status(400).send({message:"invalind"});
+		await User.updateOne({_id:req.params.id, verified: true});
+		await token.remove()
+		res.status(200).send({message:"good"})
+	}catch (error){
+		console.log(error.message)
+	}
+})
 
 module.exports = router;

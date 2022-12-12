@@ -11,6 +11,7 @@ const Signup = () => {
 		password: "",
 	});
 	const [error, setError] = useState("");
+	const [msg, setMsg] = useState("");
 	const navigate = useNavigate();
 
 	const handleChange = ({ currentTarget: input }) => {
@@ -20,10 +21,9 @@ const Signup = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		try {
-			const url = "http://localhost:8080/api/users";
+			const url = "http://localhost:3001/api/users";
 			const { data: res } = await axios.post(url, data);
-			navigate("/login");
-			console.log(res.message);
+			setMsg(res.message)
 		} catch (error) {
 			if (
 				error.response &&
@@ -86,6 +86,7 @@ const Signup = () => {
 							className={styles.input}
 						/>
 						{error && <div className={styles.error_msg}>{error}</div>}
+						{msg && <div className={styles.error_msg}>{msg}</div>}
 						<button type="submit" className={styles.green_btn}>
 							Sing Up
 						</button>
